@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { collectionGroup, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import Link from 'next/link';
 
 
 export default function Dashboard() {
@@ -55,13 +56,16 @@ export default function Dashboard() {
   <p className="text-gray-600">You're not part of any competitions yet.</p>
 ) : (
   <ul className="space-y-2">
-    {competitions.map((comp) => (
-      <li key={comp.id} className="border p-3 rounded shadow-sm">
+  {competitions.map((comp) => (
+    <li key={comp.id} className="border p-3 rounded shadow-sm">
+      <Link href={`/competition/${comp.id}`} className="text-blue-600 hover:underline">
         <p className="font-semibold">{comp.name}</p>
         <p className="text-sm text-gray-500">Status: {comp.isLocked ? 'Ongoing' : 'Setup'}</p>
-      </li>
-    ))}
-  </ul>
+      </Link>
+    </li>
+  ))}
+</ul>
+
 )}
 
     </Layout>
