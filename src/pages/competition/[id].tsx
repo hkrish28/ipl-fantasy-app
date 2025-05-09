@@ -4,6 +4,9 @@ import { useUser } from "@/hooks/useUser";
 import { loadCompetitionData } from "@/lib/loadCompetitionData";
 import Layout from "@/components/Layout";
 import PlayerList from "@/components/PlayerList";
+import { assignPlayer } from '@/lib/assignments';
+import toast from 'react-hot-toast';
+
 
 interface Player {
   id: string;
@@ -69,10 +72,19 @@ export default function CompetitionPage() {
             players={players}
             members={members}
             assignments={assignments}
-            onAssign={(playerId, memberId) => {
-              console.log(`Assigning ${playerId} to ${memberId}`);
-              // 🔜 Replace with Firestore update via assignPlayer()
+            onAssign={async (playerId, memberId) => {
+              if (!id || typeof id !== 'string') return;
+            
+              const promise = assignPlayer(id, playerId, memberId);
+              toast.promise(promise, {
+                loading: 'Assigning...',
+                success: '✅ Player assigned!',
+                error: '❌ Failed to assign player.',
+              });
+            
+              await promise;
             }}
+            
           />
         </>
       )}
