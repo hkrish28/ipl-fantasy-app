@@ -6,6 +6,7 @@ import mockRouter from 'next-router-mock';
 // Make sure to use the same mock
 jest.mock('@/lib/firebase');
 
+
 describe('Dashboard Page', () => {
   beforeEach(() => {
     mockRouter.setCurrentUrl('/dashboard');
@@ -25,7 +26,10 @@ describe('Dashboard Page', () => {
     render(<Dashboard />);
 
     expect(screen.getByText('Your Competitions')).toBeInTheDocument();
-    expect(screen.getByText(/List of competitions/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /your competitions/i })).toBeInTheDocument();
+    expect(screen.getByText(/not part of any competitions/i)).toBeInTheDocument();
+
+
   });
 
   test('redirects to /login when user is not authenticated', async () => {

@@ -10,7 +10,7 @@ jest.mock('firebase/firestore', () => {
       serverTimestamp: jest.fn(() => 'mock-timestamp'),
     };
   });
-  
+
 
 describe('assignPlayer', () => {
   afterEach(() => {
