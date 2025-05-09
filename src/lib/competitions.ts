@@ -41,4 +41,23 @@ export async function createCompetition(name: string, userId: string) {
   
     return compId;
   }
+
+/**
+ * Assigns a player to a fantasy team within a competition.
+ * @param competitionId The ID of the competition
+ * @param playerId The ID of the IPL player
+ * @param userId The ID of the fantasy team (user)
+ */
+export async function assignPlayer(
+  competitionId: string,
+  playerId: string,
+  userId: string
+): Promise<void> {
+  const assignmentRef = doc(db, `competitions/${competitionId}/assignments/${playerId}`);
+  await setDoc(assignmentRef, {
+    assignedTo: userId,
+    assignedAt: serverTimestamp(),
+  });
+}
+
   
