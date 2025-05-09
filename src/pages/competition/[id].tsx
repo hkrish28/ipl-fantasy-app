@@ -8,6 +8,7 @@ import { assignPlayer } from "@/lib/assignments";
 import toast from "react-hot-toast";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import AdminAssignmentPanel from "@/components/AdminAssignmentPanel";
 
 interface Player {
   id: string;
@@ -80,39 +81,27 @@ export default function CompetitionPage() {
         </button>
       )}
 
-      {isAdmin && (
-        <>
-          
-          {locked ? (
-            <p className="text-red-600 font-medium">
-              Competition is locked. No further assignments allowed.
-            </p>
-          ) : (
-            <>
-            <p className="mb-4 text-sm text-gray-600">
-            Assign players to fantasy teams:
-          </p>
-            <PlayerList
-              players={players}
-              members={members}
-              assignments={assignments}
-              onAssign={async (playerId, memberId) => {
-                if (!id || typeof id !== "string") return;
+{isAdmin && (
+  <AdminAssignmentPanel
+    locked={locked}
+    players={players}
+    members={members}
+    assignments={assignments}
+    onAssign={async (playerId, memberId) => {
+      if (!id || typeof id !== 'string') return;
 
-                const promise = assignPlayer(id, playerId, memberId);
-                toast.promise(promise, {
-                  loading: "Assigning...",
-                  success: "✅ Player assigned!",
-                  error: "❌ Failed to assign player.",
-                });
+      const promise = assignPlayer(id, playerId, memberId);
+      toast.promise(promise, {
+        loading: "Assigning...",
+        success: "✅ Player assigned!",
+        error: "❌ Failed to assign player.",
+      });
 
-                await promise;
-              }}
-            />
-          
-          </>)}
-        </>
-      )}
+      await promise;
+    }}
+  />
+)}
+
     </Layout>
   );
 }
