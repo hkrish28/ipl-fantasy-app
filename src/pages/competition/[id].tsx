@@ -4,9 +4,10 @@ import { useUser } from "@/hooks/useUser";
 import { loadCompetitionData } from "@/lib/loadCompetitionData";
 import Layout from "@/components/Layout";
 import PlayerList from "@/components/PlayerList";
-import { assignPlayer } from '@/lib/assignments';
-import toast from 'react-hot-toast';
-
+import { assignPlayer } from "@/lib/assignments";
+import toast from "react-hot-toast";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface Player {
   id: string;
@@ -30,6 +31,7 @@ export default function CompetitionPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [locked, setLocked] = useState(false);
 
   useEffect(() => {
     if (!id || typeof id !== "string" || loading || !user) return;
@@ -50,6 +52,13 @@ export default function CompetitionPage() {
     return null;
   }
 
+  const handleLockCompetition = async () => {
+    if (!id || typeof id !== "string") return;
+    await updateDoc(doc(db, "competitions", id), { isLocked: true });
+    toast.success("Competition locked!");
+    setLocked(true);
+  };
+
   return (
     <Layout>
       <h1 className="text-2xl font-bold mb-4">
@@ -61,6 +70,14 @@ export default function CompetitionPage() {
           You are not the admin of this competition.
         </p>
       )}
+      {isAdmin && (
+        <button
+          onClick={handleLockCompetition}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+        >
+          Lock Competition
+        </button>
+      )}
 
       {isAdmin && (
         <>
@@ -68,24 +85,29 @@ export default function CompetitionPage() {
             Assign players to fantasy teams:
           </p>
 
-          <PlayerList
-            players={players}
-            members={members}
-            assignments={assignments}
-            onAssign={async (playerId, memberId) => {
-              if (!id || typeof id !== 'string') return;
-            
-              const promise = assignPlayer(id, playerId, memberId);
-              toast.promise(promise, {
-                loading: 'Assigning...',
-                success: '✅ Player assigned!',
-                error: '❌ Failed to assign player.',
-              });
-            
-              await promise;
-            }}
-            
-          />
+          {locked ? (
+            <p className="text-red-600 font-medium">
+              Competition is locked. No further assignments allowed.
+            </p>
+          ) : (
+            <PlayerList
+              players={players}
+              members={members}
+              assignments={assignments}
+              onAssign={async (playerId, memberId) => {
+                if (!id || typeof id !== "string") return;
+
+                const promise = assignPlayer(id, playerId, memberId);
+                toast.promise(promise, {
+                  loading: "Assigning...",
+                  success: "✅ Player assigned!",
+                  error: "❌ Failed to assign player.",
+                });
+
+                await promise;
+              }}
+            />
+          )}
         </>
       )}
     </Layout>

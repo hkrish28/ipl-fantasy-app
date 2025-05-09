@@ -1,5 +1,5 @@
-import { db } from './firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { db } from "./firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 /**
  * Assign a player to a fantasy team.
@@ -12,6 +12,11 @@ export async function assignPlayer(
   playerId: string,
   memberId: string
 ): Promise<void> {
-  const ref = doc(db, 'competitions', competitionId, 'assignments', playerId);
+  const compRef = doc(db, "competitions", competitionId);
+  const compSnap = await getDoc(compRef);
+  if (compSnap.exists() && compSnap.data().locked) {
+    throw new Error("Competition is locked.");
+  }
+  const ref = doc(db, "competitions", competitionId, "assignments", playerId);
   await setDoc(ref, { assignedTo: memberId });
 }
