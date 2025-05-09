@@ -8,48 +8,51 @@ import {
   import { db } from './firebase';
   
   export async function loadCompetitionData(
-    competitionId: string,
-    userId: string,
-    onAssignmentUpdate: (map: Record<string, string>) => void
-  ) {
-    const compSnap = await getDoc(doc(db, 'competitions', competitionId));
+    id: string,
+    currentUserId: string,
+    onAssignments: (map: Record<string, string>) => void
+  ): Promise<{
+    competitionName: string;
+    isAdmin: boolean;
+    locked: boolean;
+    members: Member[];
+    players: Player[];
+  } | null> {
+    const compSnap = await getDoc(doc(db, 'competitions', id));
     if (!compSnap.exists()) return null;
   
     const compData = compSnap.data();
-    const isAdmin = compData.createdBy === userId;
+    const locked = !!compData.isLocked;
   
-    const membersSnap = await getDocs(
-      collection(db, 'competitions', competitionId, 'members')
-    );
-    const members = membersSnap.docs.map((doc) => ({
+    const isAdmin = compData.createdBy === currentUserId;
+  
+    const memberSnap = await getDocs(collection(db, 'competitions', id, 'members'));
+    const members: Member[] = memberSnap.docs.map((doc) => ({
       id: doc.id,
       teamName: doc.data().teamName || 'Unnamed Team',
     }));
   
-    const playersSnap = await getDocs(collection(db, 'players'));
-    const players = playersSnap.docs.map((doc) => ({
+    const playerSnap = await getDocs(collection(db, 'players'));
+    const players: Player[] = playerSnap.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-    }));
+    })) as Player[];
   
-    const unsubscribe = onSnapshot(
-      collection(db, 'competitions', competitionId, 'assignments'),
-      (snap) => {
-        const map: Record<string, string> = {};
-        snap.forEach((doc) => {
-          const data = doc.data();
-          map[doc.id] = data.assignedTo;
-        });
-        onAssignmentUpdate(map);
-      }
-    );
+    onSnapshot(collection(db, 'competitions', id, 'assignments'), (snap) => {
+      const map: Record<string, string> = {};
+      snap.forEach((doc) => {
+        map[doc.id] = doc.data().assignedTo;
+      });
+      onAssignments(map);
+    });
   
     return {
       competitionName: compData.name || '',
       isAdmin,
+      locked,
       members,
       players,
-      unsubscribe,
     };
   }
+  
   

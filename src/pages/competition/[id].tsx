@@ -44,6 +44,7 @@ export default function CompetitionPage() {
       setIsAdmin(data.isAdmin);
       setMembers(data.members);
       setPlayers(data.players);
+      setLocked(data.locked);
     });
   }, [id, user, loading]);
 
@@ -81,15 +82,16 @@ export default function CompetitionPage() {
 
       {isAdmin && (
         <>
-          <p className="mb-4 text-sm text-gray-600">
-            Assign players to fantasy teams:
-          </p>
-
+          
           {locked ? (
             <p className="text-red-600 font-medium">
               Competition is locked. No further assignments allowed.
             </p>
           ) : (
+            <>
+            <p className="mb-4 text-sm text-gray-600">
+            Assign players to fantasy teams:
+          </p>
             <PlayerList
               players={players}
               members={members}
@@ -107,7 +109,8 @@ export default function CompetitionPage() {
                 await promise;
               }}
             />
-          )}
+          
+          </>)}
         </>
       )}
     </Layout>
