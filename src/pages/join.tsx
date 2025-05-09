@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { joinCompetition } from '@/lib/competitions';
 import { useUser } from '@/hooks/useUser';
+import Layout from '@/components/Layout';
 
 export default function JoinPage() {
   const [code, setCode] = useState('');
@@ -26,6 +27,7 @@ export default function JoinPage() {
   }
 
   return (
+    <Layout>
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6 space-y-4">
       <h1 className="text-xl font-bold">Join a Competition</h1>
       <input
@@ -40,5 +42,6 @@ export default function JoinPage() {
         Join
       </button>
     </form>
+    </Layout>
   );
 }

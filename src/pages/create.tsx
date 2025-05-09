@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/router';
 import { useUser } from '@/hooks/useUser';
 import { createCompetition } from '@/lib/competitions';
+import Layout from '@/components/Layout';
 
 export default function CreateCompetitionPage() {
   const { user, loading } = useUser();
@@ -27,6 +28,7 @@ export default function CreateCompetitionPage() {
   }
 
   return (
+    <Layout>
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6 space-y-4">
       <h1 className="text-xl font-bold">Create a Competition</h1>
       <input
@@ -41,5 +43,6 @@ export default function CreateCompetitionPage() {
         Create
       </button>
     </form>
+    </Layout>
   );
 }
