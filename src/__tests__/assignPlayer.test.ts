@@ -1,16 +1,16 @@
 import { assignPlayer } from '@/lib/competitions';
 import { setDoc, doc } from 'firebase/firestore';
+import { CURRENT_SEASON } from '@/lib/constants';
 
 jest.mock('firebase/firestore', () => {
-    const actual = jest.requireActual('firebase/firestore');
-    return {
-      ...actual,
-      setDoc: jest.fn(),
-      doc: jest.fn(),
-      serverTimestamp: jest.fn(() => 'mock-timestamp'),
-    };
-  });
-
+  const actual = jest.requireActual('firebase/firestore');
+  return {
+    ...actual,
+    setDoc: jest.fn(),
+    doc: jest.fn(),
+    serverTimestamp: jest.fn(() => 'mock-timestamp'),
+  };
+});
 
 describe('assignPlayer', () => {
   afterEach(() => {
@@ -24,8 +24,8 @@ describe('assignPlayer', () => {
     await assignPlayer('comp123', 'virat-kohli', 'user789');
 
     expect(doc).toHaveBeenCalledWith(
-      expect.anything(), // db is not used directly due to module-level binding
-      'competitions/comp123/assignments/virat-kohli'
+      expect.anything(),
+      `seasons/${CURRENT_SEASON}/competitions/comp123/assignments/virat-kohli`
     );
 
     expect(setDoc).toHaveBeenCalledWith(mockRef, {

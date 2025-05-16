@@ -2,10 +2,10 @@ import Layout from '@/components/Layout';
 import { useUser } from '@/hooks/useUser';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { collectionGroup, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
-
+import { CURRENT_SEASON } from '@/lib/constants';
 
 export default function Dashboard() {
   const { user, loading } = useUser();
@@ -13,33 +13,34 @@ export default function Dashboard() {
   const [competitions, setCompetitions] = useState<any[]>([]);
 
   useEffect(() => {
-    if (!loading && user) {
-      const fetchUserCompetitions = async () => {
-        const memberDocs = await getDocs(
-          collectionGroup(db, 'members')
-        );
-  
-        const userMemberships = memberDocs.docs.filter(doc => doc.id === user.uid);
-  
-        const competitionPromises = userMemberships.map(async (docSnap) => {
-          const competitionId = docSnap.ref.parent.parent?.id;
-          const competitionDoc = await getDoc(doc(db, 'competitions', competitionId!));
-          return { id: competitionId, ...competitionDoc.data() };
-        });
-  
-        const competitions = await Promise.all(competitionPromises);
-        setCompetitions(competitions);
-      };
-  
-      fetchUserCompetitions();
-    }
-  }, [user, loading]);
-  
-  useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchCompetitions = async () => {
+      const comps: any[] = [];
+      const seasonCompsSnap = await getDocs(collection(db, `seasons/${CURRENT_SEASON}/competitions`));
+
+      for (const compSnap of seasonCompsSnap.docs) {
+        const membersRef = collection(db, `seasons/${CURRENT_SEASON}/competitions/${compSnap.id}/members`);
+        const membersSnap = await getDocs(membersRef);
+        const isMember = membersSnap.docs.some((m) => m.id === user.uid);
+
+        if (isMember) {
+          const data = compSnap.data();
+          comps.push({ id: compSnap.id, name: data.name, isLocked: data.isLocked });
+        }
+      }
+
+      setCompetitions(comps);
+    };
+
+    fetchCompetitions();
+  }, [user]);
 
   if (loading || !user) {
     return (
@@ -52,22 +53,20 @@ export default function Dashboard() {
   return (
     <Layout>
       <h1 className="text-xl font-bold mb-4">Your Competitions</h1>
-{competitions.length === 0 ? (
-  <p className="text-gray-600">You're not part of any competitions yet.</p>
-) : (
-  <ul className="space-y-2">
-  {competitions.map((comp) => (
-    <li key={comp.id} className="border p-3 rounded shadow-sm">
-      <Link href={`/competition/${comp.id}`} className="text-blue-600 hover:underline">
-        <p className="font-semibold">{comp.name}</p>
-        <p className="text-sm text-gray-500">Status: {comp.isLocked ? 'Ongoing' : 'Setup'}</p>
-      </Link>
-    </li>
-  ))}
-</ul>
-
-)}
-
+      {competitions.length === 0 ? (
+        <p className="text-gray-600">You're not part of any competitions yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {competitions.map((comp) => (
+            <li key={comp.id} className="border p-3 rounded shadow-sm">
+              <Link href={`/competition/${comp.id}`} className="text-blue-600 hover:underline">
+                <p className="font-semibold">{comp.name}</p>
+                <p className="text-sm text-gray-500">Status: {comp.isLocked ? 'Ongoing' : 'Setup'}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </Layout>
   );
 }

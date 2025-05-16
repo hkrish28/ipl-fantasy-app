@@ -1,7 +1,9 @@
-// __mocks__/firebase.ts
+import { jest } from '@jest/globals';
+
+export const db = {
+  // fake methods for firestore calls
+} as any;
+
 export const auth = {
-    currentUser: null,
-  };
-  
-  export const db = {};
-  
+  currentUser: { uid: 'mock-user' },
+};

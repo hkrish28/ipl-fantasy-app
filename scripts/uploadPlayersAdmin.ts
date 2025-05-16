@@ -25,6 +25,9 @@ const roleMap: Record<string, string> = {
   'WICKET KEEPER': 'WK',
 };
 
+// Set the target season ID
+const SEASON_ID = '2025';
+
 // Confirm prompt
 function askConfirmation(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -34,7 +37,7 @@ function askConfirmation(): Promise<boolean> {
     });
 
     rl.question(
-      '⚠️  This will upload all players to Firestore. Are you sure? (yes/no): ',
+      `⚠️  This will upload all players to Firestore under seasons/${SEASON_ID}/players. Are you sure? (yes/no): `,
       (answer: string) => {
         rl.close();
         resolve(answer.toLowerCase().trim() === 'yes');
@@ -66,7 +69,12 @@ async function uploadPlayers() {
     };
 
     try {
-      await db.collection('players').doc(id).set(playerDoc);
+      await db
+        .collection('seasons')
+        .doc(SEASON_ID)
+        .collection('players')
+        .doc(id)
+        .set(playerDoc);
       console.log(`✅ Uploaded: ${name}`);
     } catch (err) {
       console.error(`❌ Error uploading ${name}:`, err);

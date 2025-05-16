@@ -3,6 +3,12 @@ import mockRouter from 'next-router-mock';
 import * as userHook from '@/hooks/useUser';
 import CompetitionPage from '../pages/competition/[id]';
 
+// In test
+jest.mock('@/lib/firebase', () => ({
+  db: {}, // mocked db
+  auth: { currentUser: { uid: 'mock-user' } },
+}));
+
 jest.mock('@/lib/loadCompetitionData', () => ({
   loadCompetitionData: jest.fn().mockImplementation((_id, _uid, onAssignUpdate) => {
     onAssignUpdate({}); // empty assignments

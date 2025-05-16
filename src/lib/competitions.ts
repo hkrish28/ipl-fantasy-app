@@ -1,47 +1,56 @@
 import { db } from '@/lib/firebase';
 import { query, collection, addDoc, doc, setDoc, serverTimestamp, where, getDocs } from 'firebase/firestore';
+import { CURRENT_SEASON } from './constants';
+import { v4 as uuidv4 } from 'uuid';
 
-export async function createCompetition(name: string, userId: string) {
-  const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+function generateInviteCode(): string {
+  return uuidv4().slice(0, 6).toUpperCase();
+}
 
-  const compRef = await addDoc(collection(db, 'competitions'), {
+export async function createCompetition(name: string, createdBy: string, teamName: string) {
+  const ref = collection(db, `seasons/${CURRENT_SEASON}/competitions`);
+  const docRef = await addDoc(ref, {
     name,
-    createdBy: userId,
-    inviteCode,
+    createdBy,
     isLocked: false,
-    isOngoing: false,
-    createdAt: serverTimestamp(),
+    createdAt: new Date(),
+    inviteCode: generateInviteCode(),
   });
 
-  await setDoc(doc(db, `competitions/${compRef.id}/members/${userId}`), {
-    teamName: 'Your Team',
+  // Add creator as first member
+  await setDoc(doc(db, `seasons/${CURRENT_SEASON}/competitions/${docRef.id}/members/${createdBy}`), {
+    teamName,
     joinedAt: serverTimestamp(),
   });
 
-  return { id: compRef.id, inviteCode };
+  return docRef.id;
 }
 
 
-  export async function joinCompetition(inviteCode: string, userId: string) {
-    const q = query(collection(db, 'competitions'), where('inviteCode', '==', inviteCode));
-    const snapshot = await getDocs(q);
-  
-    if (snapshot.empty) {
-      throw new Error('Competition not found.');
-    }
-  
-    const compDoc = snapshot.docs[0];
-    const compId = compDoc.id;
-  
-    // Add user to members subcollection
-    await setDoc(doc(db, `competitions/${compId}/members/${userId}`), {
-      teamName: 'Your Team',
-      joinedAt: serverTimestamp(),
-    });
-  
-    return compId;
+export async function joinCompetition(inviteCode: string, userId: string, teamName: string) {
+  const q = query(
+    collection(db, `seasons/${CURRENT_SEASON}/competitions`),
+    where('inviteCode', '==', inviteCode)
+  );
+  const snapshot = await getDocs(q);
+
+  if (snapshot.empty) {
+    throw new Error('Competition not found.');
   }
 
+  const compDoc = snapshot.docs[0];
+  const compId = compDoc.id;
+
+  await setDoc(
+    doc(db, `seasons/${CURRENT_SEASON}/competitions/${compId}/members/${userId}`),
+    {
+      teamName,
+      joinedAt: serverTimestamp(),
+    }
+  );
+
+  return compId;
+}
 /**
  * Assigns a player to a fantasy team within a competition.
  * @param competitionId The ID of the competition
@@ -53,7 +62,11 @@ export async function assignPlayer(
   playerId: string,
   userId: string
 ): Promise<void> {
-  const assignmentRef = doc(db, `competitions/${competitionId}/assignments/${playerId}`);
+  const assignmentRef = doc(
+    db,
+    `seasons/${CURRENT_SEASON}/competitions/${competitionId}/assignments/${playerId}`
+  );
+
   await setDoc(assignmentRef, {
     assignedTo: userId,
     assignedAt: serverTimestamp(),

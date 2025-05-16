@@ -1,58 +1,58 @@
+// lib/loadCompetitionData.ts
+import { db } from './firebase';
 import {
-    collection,
-    doc,
-    getDoc,
-    getDocs,
-    onSnapshot,
-  } from 'firebase/firestore';
-  import { db } from './firebase';
-  
-  export async function loadCompetitionData(
-    id: string,
-    currentUserId: string,
-    onAssignments: (map: Record<string, string>) => void
-  ): Promise<{
-    competitionName: string;
-    isAdmin: boolean;
-    locked: boolean;
-    members: Member[];
-    players: Player[];
-  } | null> {
-    const compSnap = await getDoc(doc(db, 'competitions', id));
-    if (!compSnap.exists()) return null;
-  
-    const compData = compSnap.data();
-    const locked = !!compData.isLocked;
-  
-    const isAdmin = compData.createdBy === currentUserId;
-  
-    const memberSnap = await getDocs(collection(db, 'competitions', id, 'members'));
-    const members: Member[] = memberSnap.docs.map((doc) => ({
-      id: doc.id,
-      teamName: doc.data().teamName || 'Unnamed Team',
-    }));
-  
-    const playerSnap = await getDocs(collection(db, 'players'));
-    const players: Player[] = playerSnap.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Player[];
-  
-    onSnapshot(collection(db, 'competitions', id, 'assignments'), (snap) => {
-      const map: Record<string, string> = {};
-      snap.forEach((doc) => {
-        map[doc.id] = doc.data().assignedTo;
-      });
-      onAssignments(map);
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  onSnapshot,
+} from 'firebase/firestore';
+import { CURRENT_SEASON } from './constants';
+
+export async function loadCompetitionData(
+  compId: string,
+  userId: string,
+  onAssignmentUpdate: (assignments: Record<string, string>) => void
+) {
+  const basePath = `seasons/${CURRENT_SEASON}/competitions/${compId}`;
+
+  // Fetch competition info
+  const compSnap = await getDoc(doc(db, basePath));
+  if (!compSnap.exists()) return null;
+
+  const compData = compSnap.data();
+  const isAdmin = compData.createdBy === userId;
+
+  // Fetch members
+  const membersSnap = await getDocs(collection(db, basePath, 'members'));
+  const members = membersSnap.docs.map((d) => ({
+    id: d.id,
+    teamName: d.data().teamName,
+  }));
+
+  // Fetch players
+  const playerSnap = await getDocs(collection(db, `seasons/${CURRENT_SEASON}/players`));
+  const players = playerSnap.docs.map((d) => ({
+    id: d.id,
+    ...d.data(),
+  }));
+
+  // Subscribe to assignment changes
+  const unsubscribe = onSnapshot(collection(db, basePath, 'assignments'), (snap) => {
+    const map: Record<string, string> = {};
+    snap.forEach((doc) => {
+      map[doc.id] = doc.data().assignedTo;
     });
-  
-    return {
-      competitionName: compData.name || '',
-      isAdmin,
-      locked,
-      members,
-      players,
-    };
-  }
-  
-  
+    onAssignmentUpdate(map);
+  });
+
+  return {
+    competitionName: compData.name,
+    isAdmin,
+    locked: compData.isLocked,
+    members,
+    players,
+    unsubscribe,
+    inviteCode: compData.inviteCode,
+  };
+}

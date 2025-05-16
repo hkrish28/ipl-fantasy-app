@@ -10,6 +10,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AdminAssignmentPanel from "@/components/AdminAssignmentPanel";
 import { collection, getDocs } from "firebase/firestore"; // at the top
+import { CURRENT_SEASON } from "@/lib/constants";
 
 interface Player {
   id: string;
@@ -37,6 +38,7 @@ export default function CompetitionPage() {
   const [playerPoints, setPlayerPoints] = useState<
     { id: string; totalPoints: number }[]
   >([]);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id || typeof id !== "string" || loading || !user) return;
@@ -50,16 +52,16 @@ export default function CompetitionPage() {
       setMembers(data.members);
       setPlayers(data.players);
       setLocked(data.locked);
+      setInviteCode(data.inviteCode || null);
     });
 
-    // After loadCompetitionData().then(...)
-    getDocs(collection(db, "playerPoints")).then((snap) => {
-      const points = snap.docs.map((doc) => ({
-        id: doc.id,
-        totalPoints: doc.data().totalPoints || 0,
-      }));
-      setPlayerPoints(points);
-    });
+    // getDocs(collection(db, "playerPoints")).then((snap) => {
+    //   const points = snap.docs.map((doc) => ({
+    //     id: doc.id,
+    //     totalPoints: doc.data().totalPoints || 0,
+    //   }));
+    //   setPlayerPoints(points);
+    // });
 
     const teamToPlayersMap: Record<string, PlayerWithPoints[]> = {};
 
@@ -82,7 +84,7 @@ export default function CompetitionPage() {
 
   const handleLockCompetition = async () => {
     if (!id || typeof id !== "string") return;
-    await updateDoc(doc(db, "competitions", id), { isLocked: true });
+    await updateDoc(doc(db, `seasons/${CURRENT_SEASON}/competitions`, id), { isLocked: true });
     toast.success("Competition locked!");
     setLocked(true);
   };
@@ -92,7 +94,14 @@ export default function CompetitionPage() {
       <h1 className="text-2xl font-bold mb-4">
         Competition: {competitionName}
       </h1>
-
+      {inviteCode && (
+        <p className="text-sm text-gray-500 mb-4">
+          Invite Code:{" "}
+          <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
+            {inviteCode}
+          </span>
+        </p>
+      )}
       {!isAdmin && (
         <p className="text-gray-500">
           You are not the admin of this competition.
