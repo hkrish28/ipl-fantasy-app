@@ -9,6 +9,7 @@ import toast from "react-hot-toast";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AdminAssignmentPanel from "@/components/AdminAssignmentPanel";
+import { collection, getDocs } from "firebase/firestore"; // at the top
 
 interface Player {
   id: string;
@@ -33,6 +34,9 @@ export default function CompetitionPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState(false);
+  const [playerPoints, setPlayerPoints] = useState<
+    { id: string; totalPoints: number }[]
+  >([]);
 
   useEffect(() => {
     if (!id || typeof id !== "string" || loading || !user) return;
@@ -46,6 +50,28 @@ export default function CompetitionPage() {
       setMembers(data.members);
       setPlayers(data.players);
       setLocked(data.locked);
+    });
+
+    // After loadCompetitionData().then(...)
+    getDocs(collection(db, "playerPoints")).then((snap) => {
+      const points = snap.docs.map((doc) => ({
+        id: doc.id,
+        totalPoints: doc.data().totalPoints || 0,
+      }));
+      setPlayerPoints(points);
+    });
+
+    const teamToPlayersMap: Record<string, PlayerWithPoints[]> = {};
+
+    players.forEach((player) => {
+      const teamId = assignments[player.id];
+      if (teamId) {
+        if (!teamToPlayersMap[teamId]) teamToPlayersMap[teamId] = [];
+        teamToPlayersMap[teamId].push({
+          ...player,
+          points: playerPoints[player.id] || 0,
+        });
+      }
     });
   }, [id, user, loading]);
 
@@ -81,27 +107,27 @@ export default function CompetitionPage() {
         </button>
       )}
 
-{isAdmin && (
-  <AdminAssignmentPanel
-    locked={locked}
-    players={players}
-    members={members}
-    assignments={assignments}
-    onAssign={async (playerId, memberId) => {
-      if (!id || typeof id !== 'string') return;
+      {isAdmin && (
+        <AdminAssignmentPanel
+          locked={locked}
+          players={players}
+          members={members}
+          assignments={assignments}
+          playerPoints={playerPoints}
+          onAssign={async (playerId, memberId) => {
+            if (!id || typeof id !== "string") return;
 
-      const promise = assignPlayer(id, playerId, memberId);
-      toast.promise(promise, {
-        loading: "Assigning...",
-        success: "✅ Player assigned!",
-        error: "❌ Failed to assign player.",
-      });
+            const promise = assignPlayer(id, playerId, memberId);
+            toast.promise(promise, {
+              loading: "Assigning...",
+              success: "✅ Player assigned!",
+              error: "❌ Failed to assign player.",
+            });
 
-      await promise;
-    }}
-  />
-)}
-
+            await promise;
+          }}
+        />
+      )}
     </Layout>
   );
 }

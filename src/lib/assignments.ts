@@ -1,5 +1,5 @@
 import { db } from "./firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 /**
  * Assign a player to a fantasy team.
