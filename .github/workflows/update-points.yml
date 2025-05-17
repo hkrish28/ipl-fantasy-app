@@ -1,0 +1,26 @@
+name: Update Player Points Daily
+
+on:
+  schedule:
+    - cron: '30 5 * * *'  # Runs at 5:30 AM UTC daily
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Update Script
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ./serviceAccountKey.json
+        run: npx ts-node scripts/updatePlayerPoints.ts
