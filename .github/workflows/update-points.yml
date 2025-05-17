@@ -2,12 +2,13 @@ name: Update Player Points Daily
 
 on:
   schedule:
-    - cron: '30 5 * * *'  # Runs at 5:30 AM UTC daily
-  workflow_dispatch:
+    - cron: '30 5 * * *' # Runs every day at 5:30 AM UTC
+  workflow_dispatch:     # Also allows manual trigger from GitHub UI
 
 jobs:
   update:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -20,7 +21,11 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run Update Script
+      - name: Decrypt Firebase Service Account
+        run: |
+          echo "$FIREBASE_SERVICE_ACCOUNT_JSON" > ./serviceAccountKey.json
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ./serviceAccountKey.json
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Run updatePlayerPoints.ts
         run: npx ts-node scripts/updatePlayerPoints.ts
