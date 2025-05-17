@@ -2,7 +2,7 @@ const admin = require("firebase-admin");
 const fs = require("fs");
 const path = require("path");
 const { format, parse } = require("date-fns");
-const { CURRENT_SEASON } = require("../src/lib/constants");
+const { CURRENT_SEASON } = require('./constantsForScripts');
 
 
 // Setup Firebase
