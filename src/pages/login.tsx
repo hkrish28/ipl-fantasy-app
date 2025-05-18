@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { logIn } from '@/lib/auth';
 import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 
 export default function LoginPage() {
@@ -22,7 +23,7 @@ export default function LoginPage() {
       <button type="submit">Log In</button>
     </form>
     <p>
-    Don’t have an account? <a href="/signup" className="text-blue-600 hover:underline">Sign up</a>
+    Don’t have an account? <Link href="/signup" className="text-blue-600 hover:underline">Sign up</Link>
   </p>
   </>
   );

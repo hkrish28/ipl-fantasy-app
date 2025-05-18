@@ -100,7 +100,6 @@ export default function CompetitionPage() {
           players={players}
           members={members}
           assignments={assignments}
-          playerPoints={playerPoints}
           teamToPlayersMap={teamToPlayersMap}
           onAssign={async (playerId, memberId) => {
             if (!id || typeof id !== "string") return;

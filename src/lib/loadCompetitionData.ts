@@ -9,6 +9,13 @@ import {
 } from 'firebase/firestore';
 import { CURRENT_SEASON } from './constants';
 
+interface Player {
+  id: string;
+  name: string;
+  role: string;
+  team: string;
+}
+
 export async function loadCompetitionData(
   compId: string,
   userId: string,
@@ -32,10 +39,8 @@ export async function loadCompetitionData(
 
   // Fetch players
   const playerSnap = await getDocs(collection(db, `seasons/${CURRENT_SEASON}/players`));
-  const players = playerSnap.docs.map((d) => ({
-    id: d.id,
-    ...d.data(),
-  }));
+  const players: Player[] = playerSnap.docs.map((d) => ({
+    id: d.id, role: d.data().role, team: d.data().team, name: d.data().name }));
 
   // Subscribe to assignment changes
   const unsubscribe = onSnapshot(collection(db, basePath, 'assignments'), (snap) => {

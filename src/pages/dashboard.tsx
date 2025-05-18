@@ -54,7 +54,7 @@ export default function Dashboard() {
     <Layout>
       <h1 className="text-xl font-bold mb-4">Your Competitions</h1>
       {competitions.length === 0 ? (
-        <p className="text-gray-600">You're not part of any competitions yet.</p>
+        <p className="text-gray-600">You are not part of any competitions yet.</p>
       ) : (
         <ul className="space-y-2">
           {competitions.map((comp) => (

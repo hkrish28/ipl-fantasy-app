@@ -21,7 +21,7 @@ export default function CreateCompetitionPage() {
     setError('');
 
     try {
-      const id = await createCompetition(name, user.uid, teamName.trim() || 'My Team');
+      const id = await createCompetition(name, user!.uid, teamName.trim() || 'My Team');
       router.push(`/competition/${id}`);
     } catch (err: any) {
       setError(err.message);

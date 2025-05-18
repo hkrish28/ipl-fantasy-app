@@ -21,7 +21,6 @@ interface Props {
   players: Player[];
   members: Member[];
   assignments: Record<string, string>;
-  playerPoints: { id: string; totalPoints: number }[];
   teamToPlayersMap: Record<string, PlayerWithPoints[]>;
   onAssign: (playerId: string, memberId: string) => Promise<void>;
 }
@@ -31,7 +30,6 @@ export default function AdminAssignmentPanel({
   players,
   members,
   assignments,
-  playerPoints,
   teamToPlayersMap,
   onAssign,
 }: Props) {
