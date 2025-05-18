@@ -7,13 +7,13 @@ interface Player {
   team: string;
 }
 
-interface PlayerWithPoints extends Player {
-  points: number;
-}
-
 interface Member {
   id: string;
   teamName: string;
+}
+
+interface PlayerWithPoints extends Player {
+  points: number;
 }
 
 interface Props {
@@ -22,6 +22,7 @@ interface Props {
   members: Member[];
   assignments: Record<string, string>;
   playerPoints: { id: string; totalPoints: number }[];
+  teamToPlayersMap: Record<string, PlayerWithPoints[]>;
   onAssign: (playerId: string, memberId: string) => Promise<void>;
 }
 
@@ -31,33 +32,12 @@ export default function AdminAssignmentPanel({
   members,
   assignments,
   playerPoints,
+  teamToPlayersMap,
   onAssign,
 }: Props) {
   if (locked) {
-    // Build map of playerId → points
-    const pointsMap: Record<string, number> = {};
-    (playerPoints || []).forEach((p) => {
-      pointsMap[p.id] = p.totalPoints;
-    });
-    
-    // Build map of teamId → [players]
-    const teamToPlayersMap: Record<string, PlayerWithPoints[]> = {};
-    players.forEach((player) => {
-      const teamId = assignments[player.id];
-      if (!teamId) return;
-      if (!teamToPlayersMap[teamId]) teamToPlayersMap[teamId] = [];
-      teamToPlayersMap[teamId].push({
-        ...player,
-        points: pointsMap[player.id] || 0,
-      });
-    });
-
     return (
       <>
-        <p className="text-red-600 font-medium mb-4">
-          Competition is locked. No further assignments allowed.
-        </p>
-
         {members.map((member) => {
           const teamPlayers = teamToPlayersMap[member.id] || [];
           const totalPoints = teamPlayers.reduce((sum, p) => sum + p.points, 0);
@@ -69,7 +49,10 @@ export default function AdminAssignmentPanel({
               </summary>
               <ul className="px-4 py-2">
                 {teamPlayers.map((player) => (
-                  <li key={player.id} className="py-1 border-b text-sm flex justify-between">
+                  <li
+                    key={player.id}
+                    className="py-1 border-b text-sm flex justify-between"
+                  >
                     <span>{player.name} ({player.role})</span>
                     <span className="font-mono">{player.points} pts</span>
                   </li>

@@ -3,14 +3,13 @@ import { useRouter } from "next/router";
 import { useUser } from "@/hooks/useUser";
 import { loadCompetitionData } from "@/lib/loadCompetitionData";
 import Layout from "@/components/Layout";
-import PlayerList from "@/components/PlayerList";
 import { assignPlayer } from "@/lib/assignments";
 import toast from "react-hot-toast";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AdminAssignmentPanel from "@/components/AdminAssignmentPanel";
-import { collection, getDocs } from "firebase/firestore"; // at the top
 import { CURRENT_SEASON } from "@/lib/constants";
+import { usePlayerPoints } from "@/hooks/usePlayerPoints";
 
 interface Player {
   id: string;
@@ -35,10 +34,10 @@ export default function CompetitionPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState(false);
-  const [playerPoints, setPlayerPoints] = useState<
-    { id: string; totalPoints: number }[]
-  >([]);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+  // ✅ Hook to fetch player points and map them to teams
+  const { playerPoints, teamToPlayersMap } = usePlayerPoints({ players, assignments });
 
   useEffect(() => {
     if (!id || typeof id !== "string" || loading || !user) return;
@@ -53,27 +52,6 @@ export default function CompetitionPage() {
       setPlayers(data.players);
       setLocked(data.locked);
       setInviteCode(data.inviteCode || null);
-    });
-
-    // getDocs(collection(db, "playerPoints")).then((snap) => {
-    //   const points = snap.docs.map((doc) => ({
-    //     id: doc.id,
-    //     totalPoints: doc.data().totalPoints || 0,
-    //   }));
-    //   setPlayerPoints(points);
-    // });
-
-    const teamToPlayersMap: Record<string, PlayerWithPoints[]> = {};
-
-    players.forEach((player) => {
-      const teamId = assignments[player.id];
-      if (teamId) {
-        if (!teamToPlayersMap[teamId]) teamToPlayersMap[teamId] = [];
-        teamToPlayersMap[teamId].push({
-          ...player,
-          points: playerPoints[player.id] || 0,
-        });
-      }
     });
   }, [id, user, loading]);
 
@@ -94,7 +72,7 @@ export default function CompetitionPage() {
       <h1 className="text-2xl font-bold mb-4">
         Competition: {competitionName}
       </h1>
-      {inviteCode && (
+      {inviteCode && !locked && (
         <p className="text-sm text-gray-500 mb-4">
           Invite Code:{" "}
           <span className="font-mono bg-gray-100 px-2 py-0.5 rounded">
@@ -107,7 +85,7 @@ export default function CompetitionPage() {
           You are not the admin of this competition.
         </p>
       )}
-      {isAdmin && (
+      {isAdmin && !locked &&(
         <button
           onClick={handleLockCompetition}
           className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
@@ -123,6 +101,7 @@ export default function CompetitionPage() {
           members={members}
           assignments={assignments}
           playerPoints={playerPoints}
+          teamToPlayersMap={teamToPlayersMap}
           onAssign={async (playerId, memberId) => {
             if (!id || typeof id !== "string") return;
 
