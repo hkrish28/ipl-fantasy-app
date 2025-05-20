@@ -29,3 +29,5 @@ jobs:
 
       - name: Run updatePlayerPoints.ts
         run: npx ts-node scripts/updatePlayerPoints.ts
+      - name: Run updateTeamLeaderboard.ts
+        run: npx ts-node scripts/updateTeamLeaderboard.js

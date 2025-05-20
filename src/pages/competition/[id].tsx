@@ -6,10 +6,11 @@ import { loadCompetitionData } from '@/lib/loadCompetitionData';
 import { assignPlayer } from '@/lib/assignments';
 import AdminAssignmentPanel from '@/components/AdminAssignmentPanel';
 import toast from 'react-hot-toast';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { CURRENT_SEASON } from '@/lib/constants';
 import { usePlayerPoints } from '@/hooks/usePlayerPoints';
+import PointsTrendChart from '@/components/PointsTrendChart';
 
 interface Player {
   id: string;
@@ -21,6 +22,12 @@ interface Player {
 interface Member {
   id: string;
   teamName: string;
+}
+
+interface LeaderboardEntry {
+  member: Member;
+  total: number;
+  diff: number;
 }
 
 export default function CompetitionPage() {
@@ -35,10 +42,11 @@ export default function CompetitionPage() {
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [locked, setLocked] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   const { playerPoints, teamToPlayersMap } = usePlayerPoints({ players, assignments });
 
-  // Load data
+  // Load competition data
   useEffect(() => {
     if (!id || typeof id !== 'string' || loading || !user) return;
 
@@ -55,12 +63,36 @@ export default function CompetitionPage() {
       .catch(() => toast.error('Failed to load competition data'));
   }, [id, user, loading]);
 
-  // Redirect if unauthenticated
+  // Redirect if not authenticated
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [loading, user, router]);
+
+  // Build leaderboard with diff from previous day
+  useEffect(() => {
+    if (!id || typeof id !== 'string' || members.length === 0) return;
+    const fetchLeaderboard = async () => {
+      const entries = await Promise.all(
+        members.map(async member => {
+          const histRef = collection(
+            db,
+            `seasons/${CURRENT_SEASON}/competitions/${id}/leaderboard/${member.id}/history`
+          );
+          const q = query(histRef, orderBy('__name__', 'desc'), limit(2));
+          const snap = await getDocs(q);
+          const pointsArr = snap.docs.map(d => d.data().totalPoints as number);
+          const today = pointsArr[0] || 0;
+          const yesterday = pointsArr[1] || 0;
+          return { member, total: today, diff: today - yesterday };
+        })
+      );
+      entries.sort((a, b) => b.total - a.total);
+      setLeaderboard(entries);
+    };
+    fetchLeaderboard();
+  }, [id, members]);
 
   if (loading || !user) {
     return (
@@ -85,12 +117,10 @@ export default function CompetitionPage() {
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
-          <h1 className="text-3xl font-bold text-gray-800">
-            {competitionName}
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-800">{competitionName}</h1>
           {inviteCode && !locked && (
             <span className="mt-3 sm:mt-0 inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 font-mono rounded-lg">
               Invite Code: {inviteCode}
@@ -98,7 +128,7 @@ export default function CompetitionPage() {
           )}
         </div>
 
-        {/* Actions */}
+        {/* Admin actions */}
         {isAdmin && (
           <div className="flex items-center space-x-4">
             {!locked && (
@@ -109,27 +139,43 @@ export default function CompetitionPage() {
                 Lock Competition
               </button>
             )}
-            <span
-              className={`px-3 py-1 text-sm font-medium rounded-full $
-                locked
-                  ? 'bg-green-100 text-green-800'
-                  : 'bg-yellow-100 text-yellow-800'
-              `}
-            >
-              {locked ? 'Ongoing' : 'Setup'}
-            </span>
+            <span className={`px-3 py-1 text-sm font-medium rounded-full ${locked ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{locked ? 'Ongoing' : 'Setup'}</span>
           </div>
         )}
 
-        {/* Non-admin message */}
-        {!isAdmin && (
-          <p className="text-gray-600">You are not the admin of this competition.</p>
-        )}
+        {/* Leaderboard table */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold mb-4">Leaderboard</h2>
+          <table className="w-full table-auto">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="px-4 py-2 text-left">Rank</th>
+                <th className="px-4 py-2 text-left">Team</th>
+                <th className="px-4 py-2 text-right">Total Points</th>
+                <th className="px-4 py-2 text-right">Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {leaderboard.map((entry, idx) => (
+                <tr key={entry.member.id} className="border-t">
+                  <td className="px-4 py-2">{idx + 1}</td>
+                  <td className="px-4 py-2">{entry.member.teamName}</td>
+                  <td className="px-4 py-2 text-right font-semibold">{entry.total}</td>
+                  <td className={`px-4 py-2 text-right ${entry.diff > 0 ? 'text-green-600' : entry.diff < 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                    {entry.diff > 0 ? `+${entry.diff}` : entry.diff < 0 ? `${entry.diff}` : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         {/* Assignment Panel */}
-        {isAdmin && (
+        {(isAdmin || locked) && (
           <div className="bg-white border border-gray-200 rounded-lg shadow-md p-6">
             <AdminAssignmentPanel
+              competitionId={id as string}
+              myTeamId={user!.uid}
               locked={locked}
               players={players}
               members={members}
@@ -148,23 +194,9 @@ export default function CompetitionPage() {
           </div>
         )}
 
-        {/* Team Points Overview */}
-        <div className="bg-white border border-gray-200 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">Team Points Overview</h2>
-          <ul className="space-y-2">
-            {Object.entries(teamToPlayersMap).map(([teamId, teamPlayers]) => {
-              const total = teamPlayers.reduce((sum, p) => sum + p.points, 0);
-              const member = members.find(m => m.id === teamId);
-              return (
-                <li key={teamId} className="flex justify-between">
-                  <span className="font-medium text-gray-700">{member?.teamName || 'Team'}</span>
-                  <span className="font-semibold text-indigo-600">{total}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
 
+        {/* Points trend chart */}
+        <PointsTrendChart competitionId={id as string} members={members} />
       </div>
     </Layout>
   );
