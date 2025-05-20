@@ -32,6 +32,33 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 ```
 
+### 4. Firestore Indexes
+
+To support efficient sorting of player points and leaderboard history (for trends graphs), you must create composite indexes in the Firebase console or via `firestore indexes`:
+
+1. **PlayerPoints history index**
+
+   * Collection: `seasons/{seasonId}/players/{playerId}/history`
+   * Fields:
+
+     * `__name__` **DESC**
+     * **No additional fields**
+   * Query: `orderBy('__name__', 'desc').limit(7)`
+
+2. **Leaderboard history index**
+
+   * Collection: `seasons/{seasonId}/competitions/{competitionId}/leaderboard/{teamId}/history`
+   * Fields:
+
+     * `__name__` **DESC**
+   * Query: `orderBy('__name__', 'desc').limit(2)`
+
+You can create these via the **Indexes** tab in the Firebase console or by adding to `firestore.indexes.json` and running:
+
+```bash
+npx firebase deploy --only firestore:indexes
+```
+
 ---
 
 ## 🔄 Seeding Player Data
@@ -67,24 +94,20 @@ Example structure:
 
 > Only `name`, `role`, and `team` will be stored in Firestore.
 
----
-
 ### 2. Add Firebase Admin Credentials
 
-Go to your Firebase Console → Project Settings → **Service Accounts**  
+Go to your Firebase Console → Project Settings → **Service Accounts**
 Click **“Generate new private key”** and save it as:
 
 ```
 serviceAccountKey.json
 ```
 
-> ⚠️ Important: Add this to your `.gitignore` file:
+> ⚠️ Important: Add this to your `.gitignore`:
 
 ```
 /serviceAccountKey.json
 ```
-
----
 
 ### 3. Run the Upload Script
 
@@ -101,7 +124,7 @@ You’ll be prompted:
 Type `yes` to proceed. Each player will be saved to:
 
 ```
-/players/{playerId}
+seasons/{seasonId}/players/{playerId}
 ```
 
 With this format:
@@ -118,15 +141,33 @@ With this format:
 
 ## 🛠 Tech Stack
 
-- **Next.js** – Full-stack React framework
-- **Firebase** – Auth & Firestore
-- **Tailwind CSS** – Styling
-- **Jest** + **React Testing Library** – Unit & integration tests
+* **Next.js** – Full-stack React framework
+* **Firebase** – Auth, Firestore, Cloud Functions
+* **Tailwind CSS** – Styling
+* **Recharts** – Charting
+* **Jest** + **React Testing Library** – Unit & integration tests
 
 ---
 
 ## ✅ Development Notes
 
-- Each feature is committed incrementally with clear test coverage
-- All critical Firebase logic (auth, DB) is abstracted under `/lib`
-- The app is being built with MVP → production readiness in mind
+* Each feature is committed incrementally with clear test coverage.
+* All critical Firebase logic (auth, DB) is abstracted under `/lib`.
+* The app is built with MVP → production readiness in mind.
+* **Firestore composite indexes** are required for history sorting.
+
+---
+
+## 🚧 Running in Production
+
+1. Build the Next.js app:
+
+   ```bash
+   npm run build
+   ```
+2. Deploy to Vercel or Firebase Hosting.
+3. Ensure **Firestore indexes** are live via the Firebase console.
+
+---
+
+Happy building your IPL Fantasy League! Feel free to raise issues or contribute.
