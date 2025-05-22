@@ -145,30 +145,37 @@ export default function CompetitionPage() {
 
         {/* Leaderboard table */}
         <div className="bg-white border border-gray-200 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold mb-4">Leaderboard</h2>
-          <table className="w-full table-auto">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="px-4 py-2 text-left">Rank</th>
-                <th className="px-4 py-2 text-left">Team</th>
-                <th className="px-4 py-2 text-right">Total Points</th>
-                <th className="px-4 py-2 text-right">Change</th>
+      <h2 className="text-xl font-semibold mb-4">Leaderboard</h2>
+      {/* Make table horizontally scrollable on small screens */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="px-4 py-2 text-left">Rank</th>
+              <th className="px-4 py-2 text-left">Team</th>
+              <th className="px-4 py-2 text-right">Total Points</th>
+              <th className="px-4 py-2 text-right">Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            {leaderboard.map((entry, idx) => (
+              <tr key={entry.member.id} className="border-t">
+                <td className="px-4 py-2 whitespace-nowrap">{idx + 1}</td>
+                <td className="px-4 py-2 whitespace-nowrap">{entry.member.teamName}</td>
+                <td className="px-4 py-2 text-right whitespace-nowrap font-semibold">{entry.total}</td>
+                <td className={`px-4 py-2 text-right whitespace-nowrap ${
+                    entry.diff > 0 ? 'text-green-600' :
+                    entry.diff < 0 ? 'text-red-600' :
+                    'text-gray-700'
+                  }`}>
+                  {entry.diff > 0 ? `+${entry.diff}` : entry.diff < 0 ? `${entry.diff}` : '-'}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {leaderboard.map((entry, idx) => (
-                <tr key={entry.member.id} className="border-t">
-                  <td className="px-4 py-2">{idx + 1}</td>
-                  <td className="px-4 py-2">{entry.member.teamName}</td>
-                  <td className="px-4 py-2 text-right font-semibold">{entry.total}</td>
-                  <td className={`px-4 py-2 text-right ${entry.diff > 0 ? 'text-green-600' : entry.diff < 0 ? 'text-red-600' : 'text-gray-700'}`}>
-                    {entry.diff > 0 ? `+${entry.diff}` : entry.diff < 0 ? `${entry.diff}` : '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
         {/* Assignment Panel */}
         {(isAdmin || locked) && (
